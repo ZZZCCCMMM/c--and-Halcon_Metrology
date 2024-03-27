@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="17.12">
+<procedure name="main">
+<interface/>
+<body>
+<c>*读图</c>
+<l>read_image (Image, './Image/mode.png')</l>
+<l>get_image_size (Image, Width, Height)</l>
+<l>rgb1_to_gray (Image, GrayImage)</l>
+<c></c>
+<c>*一、创建形状模板</c>
+<c>*画出待识别工件</c>
+<l>dev_get_window (WindowHandle)</l>
+<l>dev_disp_text ('请画出要识别的工件', 'window', 'top', 'left', 'black', [], [])</l>
+<l>draw_rectangle1 (WindowHandle, Row11, Column11, Row21, Column21)</l>
+<l>gen_rectangle1 (ROI_0,Row11, Column11, Row21, Column21)</l>
+<l>reduce_domain (GrayImage, ROI_0, ImageReduced)</l>
+<c>*取中心点坐标</c>
+<l>threshold (ImageReduced, ShapeModelRegion, 0, 256)</l>
+<l>area_center (ShapeModelRegion, Area, ShapeModelRow, ShapeModelColumn)</l>
+<l>orientation_region (ShapeModelRegion, ShapeModelPhi)</l>
+<c>*创建形状模板</c>
+<l>create_shape_model (ImageReduced, 6, 0, rad(360), 'auto', 'auto', 'use_polarity', 'auto', 'auto', ShapeModelID)</l>
+<l>get_shape_model_contours (ModelContours, ShapeModelID, 1)</l>
+<c>*保存形状模板</c>
+<l>FileShapeModel := './Model/ShapeModel.sbm'</l>
+<l>write_shape_model (ShapeModelID, FileShapeModel)</l>
+<c></c>
+<c>*二、创建计量模型</c>
+<l>create_metrology_model (MetrologyHandle)</l>
+<l>create_metrology_model (MetrologyHandle1)</l>
+<l>set_metrology_model_image_size (MetrologyHandle, Width, Height)</l>
+<l>read_image (Image, './Image/mode.png')</l>
+<c>*添加圆模型</c>
+<l>dev_disp_text ('请画出要识别的圆', 'window', 'top', 'left', 'black', [], [])</l>
+<l>draw_circle (WindowHandle, Row, Column, Radius)</l>
+<l>add_metrology_object_circle_measure (MetrologyHandle1, Row, Column, Radius, 20, 5, 1, 30, [], [], Index1)</l>
+<l>apply_metrology_model (GrayImage, MetrologyHandle1)</l>
+<l>get_metrology_object_result_contour (Contour, MetrologyHandle1, 0, 'all', 1.5)</l>
+<l>get_metrology_object_result (MetrologyHandle1, 0, 'all', 'result_type', 'all_param', LineModel)</l>
+<l>add_metrology_object_circle_measure (MetrologyHandle, LineModel[0], LineModel[1], LineModel[2], 20, 5, 1, 30, [], [], Index)</l>
+<c>*设置模型的坐标原点</c>
+<l>set_metrology_model_param (MetrologyHandle, 'reference_system', [ShapeModelRow, ShapeModelColumn,0])</l>
+<l>get_metrology_object_model_contour (Contour1, MetrologyHandle, 0, 1.5)</l>
+<c>*保存计量模型</c>
+<l>MeasureModel := './Model/Measure.mtr'</l>
+<l>write_metrology_model (MetrologyHandle, MeasureModel)</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="19.05.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>*准备记录数据</c>
+<l>open_file ('note.TXT', 'append', FileHandle)</l>
+<l>get_system_time (MSecond, Second, Minute, Hour, Day, YDay, Month, Year)</l>
+<l>fwrite_string (FileHandle, Day+'日'+Hour+'时'+Minute+'分'+Second+'秒')</l>
+<l>fnew_line (FileHandle)</l>
+<l>fnew_line (FileHandle)</l>
+<c></c>
+<c>*把两个模型读取进来</c>
+<l>FileShapeModel := './Model/ShapeModel.sbm'</l>
+<l>MeasureModel := './Model/Measure.mtr'</l>
+<l>read_shape_model (FileShapeModel, ShapeModelModelID)</l>
+<l>read_metrology_model (MeasureModel, MetrologyHandle)</l>
+<c></c>
+<c>*读取图像文件</c>
+<l>list_files ('./Image', ['files','follow_links'], ImageFiles)</l>
+<l>tuple_regexp_select (ImageFiles, ['\\.(tif|tiff|gif|bmp|jpg|jpeg|jp2|png|pcx|pgm|ppm|pbm|xwd|ima|hobj)$','ignore_case'], ImageFiles)</l>
+<l>for Index := 0 to |ImageFiles| - 1 by 1</l>
+<l>    read_image (Image, ImageFiles[Index])</l>
+<l>    get_image_size (Image, Width, Height)</l>
+<l>    dev_open_window (0, 0, Width/2, Height/2, 'black', WindowHandle)</l>
+<l>    a:=Index+1</l>
+<l>    fwrite_string (FileHandle, '第'+a+'张图'+'   ')</l>
+<l>    rgb1_to_gray (Image, GrayImage)</l>
+<c>    *模板匹配</c>
+<l>    find_shape_model (GrayImage, ShapeModelModelID, 0, rad(360), 0.5, 3, 0, 'least_squares', 5, 0.9, FindRow, FindColumn, FindAngle, Score)</l>
+<c>    *取得匹配项的坐标</c>
+<l>    dev_display_shape_matching_results (ShapeModelModelID, 'red', FindRow, FindColumn, FindAngle, 1, 1, 0)</l>
+<c>    *求匹配项个数</c>
+<l>    FindNumber:=|FindRow|</l>
+<l>    fwrite_string (FileHandle, '共匹配'+FindNumber+'个目标')</l>
+<l>    fnew_line (FileHandle)</l>
+<l>    dev_display (Image)</l>
+<c>    *循环处理每个匹配项</c>
+<l>    for i := 0 to FindNumber-1 by 1</l>
+<l>        b:=i+1</l>
+<l>        fwrite_string (FileHandle, '第'+b+'个目标')</l>
+<l>        fnew_line (FileHandle)</l>
+<c>        *测量</c>
+<l>        align_metrology_model (MetrologyHandle, FindRow[i], FindColumn[i], FindAngle[i])</l>
+<l>        get_metrology_object_model_contour (Contour2, MetrologyHandle, 'all', 1.5)</l>
+<l>        apply_metrology_model (GrayImage, MetrologyHandle)</l>
+<l>        get_metrology_object_result_contour (Contour3, MetrologyHandle, 'all', 'all', 1.5)</l>
+<l>        dev_set_color ('red')</l>
+<l>        dev_set_line_width (2)</l>
+<l>        dev_display (Contour3)</l>
+<c>        </c>
+<c>        *取得第一条线结果</c>
+<l>        get_metrology_object_result (MetrologyHandle, 0, 'all', 'result_type', 'all_param', Line1)</l>
+<l>        distance_pp (Line1[0], Line1[1], Line1[2], Line1[3], Distance1)</l>
+<l>        dev_disp_text ('Line1='+Distance1, 'image', (Line1[0]+Line1[2])/2, (Line1[1]+Line1[3])/2, 'black', [], [])</l>
+<l>        fwrite_string (FileHandle, 'Line1='+Distance1)</l>
+<l>        fnew_line (FileHandle)</l>
+<l>        fnew_line (FileHandle)</l>
+<l>    endfor</l>
+<l>    dump_window_image (Image1, WindowHandle)</l>
+<l>    write_image (Image1, 'png', 0, '第'+a+'张图')</l>
+<l>    dev_close_window ()</l>
+<l>endfor</l>
+<l>fnew_line (FileHandle)</l>
+<l>close_file (FileHandle)</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>
